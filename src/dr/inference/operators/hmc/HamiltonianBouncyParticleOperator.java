@@ -68,7 +68,7 @@ public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator 
         WrappedVector gradient = getInitialGradient();
         WrappedVector action = getPrecisionProduct(velocity);
         double[] inertia = new double[1]; // array so retains state
-        inertia[0] drawInitialInertia();
+        inertia[0] = drawInitialInertia();
         BounceState bounceState = new BounceState(drawTotalTravelTime());
 
         initializeNumEvent();
