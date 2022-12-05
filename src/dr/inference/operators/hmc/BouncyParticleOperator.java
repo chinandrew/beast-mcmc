@@ -46,19 +46,19 @@ import static dr.math.matrixAlgebra.ReadableVector.Utils.innerProduct;
 public class BouncyParticleOperator extends AbstractParticleOperator implements Loggable {
 
     public BouncyParticleOperator(GradientWrtParameterProvider gradientProvider,
-                                  PrecisionMatrixVectorProductProvider multiplicationProvider,
-                                  PrecisionColumnProvider columnProvider,
-                                  double weight, Options runtimeOptions, NativeCodeOptions nativeOptions,
-                                  boolean refreshVelocity, Parameter mask,
-                                  MassPreconditioner massPreconditioner,
-                                  MassPreconditionScheduler.Type preconditionSchedulerType) {
+                                             PrecisionMatrixVectorProductProvider multiplicationProvider,
+                                             PrecisionColumnProvider columnProvider,
+                                             double weight, Options runtimeOptions, NativeCodeOptions nativeOptions,
+                                             boolean refreshVelocity, Parameter mask,
+                                             MassPreconditioner massPreconditioner,
+                                             MassPreconditionScheduler.Type preconditionSchedulerType) {
         super(gradientProvider, multiplicationProvider, columnProvider, weight, runtimeOptions, nativeOptions,
                 refreshVelocity, mask, null, massPreconditioner, preconditionSchedulerType);
     }
 
     @Override
     public String getOperatorName() {
-        return "Bouncy particle operator";
+        return "Hamiltonian bouncy particle operator";
     }
 
     @Override
@@ -67,10 +67,15 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
         WrappedVector velocity = drawInitialVelocity();
         WrappedVector gradient = getInitialGradient();
         WrappedVector action = getPrecisionProduct(velocity);
-
+        double[] inertia = new double[1]; // array so retains state
+        inertia[0] = drawInitialInertia();
         BounceState bounceState = new BounceState(drawTotalTravelTime());
 
         initializeNumEvent();
+
+
+        double x_Phi_x_old;
+        double x_Phi_x_new;
 
         while (bounceState.remainingTime > 0) {
 
@@ -79,21 +84,42 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
             } else {
                 action = getPrecisionProduct(velocity);
             }
-
+            x_Phi_x_old =  -innerProduct(position, gradient);
             double v_Phi_x = -innerProduct(velocity, gradient);
             double v_Phi_v = innerProduct(velocity, action);
+            System.out.println( (-v_Phi_x + Math.sqrt(v_Phi_x * v_Phi_x + v_Phi_v * 2 * inertia[0])) / v_Phi_v);
+            // (-xprecv + (xprecv ** 2 + vprecv * 2 * inertia)**0.5) / vprecv
+            double bounceTime = getBounceTime(v_Phi_v, v_Phi_x, inertia);
 
-            double tMin = Math.max(0.0, -v_Phi_x / v_Phi_v);
-            double U_min = tMin * tMin / 2 * v_Phi_v + tMin * v_Phi_x;
+//            for (int i = 0, len = 85; i < len; ++i) {
+//                updatePosition(position, velocity, 0.0001);
+//                updateGradient(gradient, 0.0001, action);
+//                x_Phi_x_new =  -innerProduct(position, gradient);
+//                System.out.println(inertia[0] - x_Phi_x_new / 2.0 + x_Phi_x_old / 2.0);
+//                System.out.println((i+1)*0.0001);
+//            }
+            double actualBounceTime = 0.0085190844;
+            updatePosition(position, velocity, actualBounceTime);
+            updateGradient(gradient, actualBounceTime, action);
+            x_Phi_x_new =  -innerProduct(position, gradient);
 
-            double bounceTime = getBounceTime(v_Phi_v, v_Phi_x, U_min);
+            System.out.println("U diff");
+            System.out.println(v_Phi_x*actualBounceTime + v_Phi_v*actualBounceTime*actualBounceTime/2);
+            System.out.println(- x_Phi_x_new / 2.0 + x_Phi_x_old / 2.0);
+            System.out.println("inertia");
+            System.out.println(inertia[0]);
+            System.out.println("computed bouncetime ##################################");
+            System.out.println(bounceTime);
+            System.out.println("should be near zero");
+            System.out.println(inertia[0] - x_Phi_x_new / 2.0 + x_Phi_x_old / 2.0);
+
+
             MinimumTravelInformation travelInfo = getTimeToBoundary(position, velocity);
-            double refreshTime = getRefreshTime();
 
             if (printEventLocations) System.err.println(position);
             bounceState = doBounce(
-                    bounceState.remainingTime, bounceTime, travelInfo, refreshTime,
-                    position, velocity, gradient, action
+                    bounceState.remainingTime, bounceTime, travelInfo,
+                    position, velocity, gradient, action, inertia
             );
 
             recordOneMoreEvent();
@@ -104,47 +130,45 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
 
     private BounceState doBounce(double remainingTime, double bounceTime,
                                  MinimumTravelInformation boundaryInfo,
-                                 double refreshTime,
                                  WrappedVector position, WrappedVector velocity,
-                                 WrappedVector gradient, WrappedVector action) {
+                                 WrappedVector gradient, WrappedVector action,
+                                 double[] inertia) {
 
+        double x_Phi_x_old;
+        double x_Phi_x_new;
         double timeToBoundary = boundaryInfo.time;
         int boundaryIndex = boundaryInfo.index[0];
         final BounceState finalBounceState;
         final Type eventType;
         int eventIndex;
-
         if (remainingTime < Math.min(timeToBoundary, bounceTime)) { // No event during remaining time
 
             updatePosition(position, velocity, remainingTime);
             finalBounceState = new BounceState(Type.NONE, -1, 0.0);
         } else {
-            if (refreshTime < Math.min(timeToBoundary, bounceTime)) { //refreshment event
-                eventType = Type.REFRESHMENT;
-                eventIndex = -1;
-                updatePosition(position, velocity, refreshTime);
-                updateGradient(gradient, refreshTime, action);
-
-                refreshVelocity(velocity);
-            } else if (timeToBoundary < bounceTime) { // Reflect against the boundary
+            if (timeToBoundary < bounceTime) { // Reflect against the boundary
                 eventType = Type.BINARY_BOUNDARY;
                 eventIndex = boundaryIndex;
+                x_Phi_x_old =  -innerProduct(position, gradient);
 
                 updatePosition(position, velocity, timeToBoundary);
                 updateGradient(gradient, timeToBoundary, action);
-
                 position.set(boundaryIndex, 0.0);
                 velocity.set(boundaryIndex, -1 * velocity.get(boundaryIndex));
+                x_Phi_x_new =  -innerProduct(position, gradient);
+                updateInertia(inertia, x_Phi_x_old, x_Phi_x_new);
+
 
                 remainingTime -= timeToBoundary;
 
             } else { // Bounce caused by the gradient
                 eventType = Type.GRADIENT;
                 eventIndex = -1;
-
                 updatePosition(position, velocity, bounceTime);
+
                 updateGradient(gradient, bounceTime, action);
                 updateVelocity(velocity, gradient, preconditioning.mass);
+                zeroInertia(inertia);
                 remainingTime -= bounceTime;
             }
             finalBounceState = new BounceState(eventType, eventIndex, remainingTime);
@@ -152,9 +176,17 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
         return finalBounceState;
     }
 
+    private void zeroInertia(double[] inertia){
+        inertia[0] = 0.0;
+    }
+
+    private void updateInertia(double[] inertia, double x_Phi_x_old, double  x_Phi_x_new) {
+        inertia[0] = inertia[0] - x_Phi_x_new / 2.0 + x_Phi_x_old / 2.0;
+    }
+
     private WrappedVector drawInitialVelocity() {
 
-        if (!refreshVelocity && storedVelocity != null) {
+        if (storedVelocity != null) {
             return storedVelocity;
         } else {
             ReadableVector mass = preconditioning.mass;
@@ -200,15 +232,16 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
         return new MinimumTravelInformation(minTime, index);
     }
 
-    private double getRefreshTime() {
-        return refreshmentRate > 0 ? MathUtils.nextExponential(1) / refreshmentRate : Double.POSITIVE_INFINITY;
+    private double drawInitialInertia() {
+        return MathUtils.nextExponential(1);
     }
 
     @SuppressWarnings("all")
-    private double getBounceTime(double v_phi_v, double v_phi_x, double u_min) {
-        double a = v_phi_v / 2;
-        double b = v_phi_x;
-        double c = -u_min - MathUtils.nextExponential(1);
+    private double getBounceTime(double v_phi_v, double v_phi_x, double[] inertia) {
+        double a = v_phi_v;
+        double b = 2.0 * v_phi_x;
+        double c = - 2.0 * inertia[0];
+//        System.out.println( (-v_phi_x + Math.sqrt(v_phi_x *v_phi_x + v_phi_v * 2 * inertia[0])) / v_phi_v);
         return (-b + Math.sqrt(b * b - 4 * a * c)) / 2 / a;
     }
 
@@ -221,18 +254,6 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
 
         for (int i = 0, len = velocity.getDim(); i < len; ++i) {
             velocity.set(i, velocity.get(i) - 2 * vg / ggDivM * gDivM.get(i));
-        }
-    }
-
-    private void refreshVelocity(WrappedVector velocity) {
-        ReadableVector mass = preconditioning.mass;
-
-        for (int i = 0, len = velocity.getDim(); i < len; ++i) {
-            velocity.set(i, MathUtils.nextGaussian() / Math.sqrt(mass.get(i)));
-        }
-
-        if (mask != null) {
-            applyMask(velocity);
         }
     }
 
@@ -258,6 +279,5 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
         return columns;
     }
 
-    private final double refreshmentRate = 1.4;//todo: make an input option
     private final static boolean printEventLocations = false;
 }
