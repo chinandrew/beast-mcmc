@@ -67,7 +67,8 @@ public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator 
         WrappedVector velocity = drawInitialVelocity();
         WrappedVector gradient = getInitialGradient();
         WrappedVector action = getPrecisionProduct(velocity);
-        double inertia = drawInitialInertia();
+        double[] inertia = new double[1]; // array so retains state
+        inertia[0] drawInitialInertia();
         BounceState bounceState = new BounceState(drawTotalTravelTime());
 
         initializeNumEvent();
@@ -83,15 +84,13 @@ public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator 
             double v_Phi_x = -innerProduct(velocity, gradient);
             double v_Phi_v = innerProduct(velocity, action);
 
-            double tMin = Math.max(0.0, -v_Phi_x / v_Phi_v);
-
             double bounceTime = getBounceTime(v_Phi_v, v_Phi_x, inertia);
             MinimumTravelInformation travelInfo = getTimeToBoundary(position, velocity);
 
             if (printEventLocations) System.err.println(position);
             bounceState = doBounce(
                     bounceState.remainingTime, bounceTime, travelInfo,
-                    position, velocity, gradient, action
+                    position, velocity, gradient, action, inertia
             );
 
             recordOneMoreEvent();
@@ -103,7 +102,8 @@ public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator 
     private BounceState doBounce(double remainingTime, double bounceTime,
                                  MinimumTravelInformation boundaryInfo,
                                  WrappedVector position, WrappedVector velocity,
-                                 WrappedVector gradient, WrappedVector action) {
+                                 WrappedVector gradient, WrappedVector action,
+                                 double[] inertia) {
 
         double timeToBoundary = boundaryInfo.time;
         int boundaryIndex = boundaryInfo.index[0];
@@ -120,8 +120,11 @@ public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator 
                 eventType = Type.BINARY_BOUNDARY;
                 eventIndex = boundaryIndex;
 
+                double x_Phi_x_old =  -innerProduct(position, gradient);
                 updatePosition(position, velocity, timeToBoundary);
                 updateGradient(gradient, timeToBoundary, action);
+                double x_Phi_x_new =  -innerProduct(position, gradient);
+                updateBoundaryInertia(inertia, x_Phi_x_old, x_Phi_x_new);
 
                 position.set(boundaryIndex, 0.0);
                 velocity.set(boundaryIndex, -1 * velocity.get(boundaryIndex));
@@ -135,11 +138,20 @@ public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator 
                 updatePosition(position, velocity, bounceTime);
                 updateGradient(gradient, bounceTime, action);
                 updateVelocity(velocity, gradient, preconditioning.mass);
+                zeroInertia(inertia);
                 remainingTime -= bounceTime;
             }
             finalBounceState = new BounceState(eventType, eventIndex, remainingTime);
         }
         return finalBounceState;
+    }
+
+    private void zeroInertia(double[] inertia){
+        inertia[0] = 0.0;
+    }
+
+    private void updateBoundaryInertia(double[] inertia, double x_Phi_x_old, double  x_Phi_x_new) {
+        inertia[0] = inertia[0] - x_Phi_x_new / 2.0 + x_Phi_x_old / 2.0;
     }
 
     private WrappedVector drawInitialVelocity() {
@@ -195,10 +207,10 @@ public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator 
     }
 
     @SuppressWarnings("all")
-    private double getBounceTime(double v_phi_v, double v_phi_x, double inertia) {
+    private double getBounceTime(double v_phi_v, double v_phi_x, double[] inertia) {
         double a = v_phi_v;
         double b = 2 * v_phi_x;
-        double c = - 2 * inertia;
+        double c = - 2 * inertia[0];
         return (-b + Math.sqrt(b * b - 4 * a * c)) / 2 / a;
     }
 
