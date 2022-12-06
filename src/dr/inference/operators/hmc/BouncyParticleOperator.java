@@ -73,10 +73,6 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
 
         initializeNumEvent();
 
-
-        double x_Phi_x_old;
-        double x_Phi_x_new;
-
         while (bounceState.remainingTime > 0) {
 
             if (bounceState.type == Type.BINARY_BOUNDARY) {
@@ -84,34 +80,46 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
             } else {
                 action = getPrecisionProduct(velocity);
             }
-            x_Phi_x_old =  -innerProduct(position, gradient);
+            double x_Phi_x =  -innerProduct(position, gradient);
+            double x_Phi_x2 = innerProduct(position, getPrecisionProduct(position));
             double v_Phi_x = -innerProduct(velocity, gradient);
             double v_Phi_v = innerProduct(velocity, action);
-            System.out.println( (-v_Phi_x + Math.sqrt(v_Phi_x * v_Phi_x + v_Phi_v * 2 * inertia[0])) / v_Phi_v);
-            // (-xprecv + (xprecv ** 2 + vprecv * 2 * inertia)**0.5) / vprecv
-            double bounceTime = getBounceTime(v_Phi_v, v_Phi_x, inertia);
+            double x_Phi_v = innerProduct(position, action);
+            System.out.println("xPv");
+            System.out.println(v_Phi_x);
+            System.out.println(innerProduct(velocity, getPrecisionProduct(position)));
+            System.out.println(-innerProduct(gradient, velocity));
+            System.out.println(x_Phi_v);
+            System.out.println(innerProduct(position, action));
+            System.out.println(innerProduct(position, getPrecisionProduct(velocity)));
 
-//            for (int i = 0, len = 85; i < len; ++i) {
-//                updatePosition(position, velocity, 0.0001);
-//                updateGradient(gradient, 0.0001, action);
-//                x_Phi_x_new =  -innerProduct(position, gradient);
-//                System.out.println(inertia[0] - x_Phi_x_new / 2.0 + x_Phi_x_old / 2.0);
-//                System.out.println((i+1)*0.0001);
-//            }
+            double bounceTime = getBounceTime(v_Phi_v, v_Phi_x, inertia);
             double actualBounceTime = 0.0085190844;
             updatePosition(position, velocity, actualBounceTime);
             updateGradient(gradient, actualBounceTime, action);
-            x_Phi_x_new =  -innerProduct(position, gradient);
+            double x_Phi_x_new =  -innerProduct(position, gradient);
+            double x_Phi_x_new2 = innerProduct(position, getPrecisionProduct(position));
+            System.out.println("--------------------------------------------");
+            System.out.println("x_Phi_x_old");
+            System.out.println(x_Phi_x);
+            System.out.println(x_Phi_x2);
+            System.out.println("-innerProduct(position, gradient)");
+            System.out.println(x_Phi_x_new);
+            System.out.println(x_Phi_x_new2);
+            System.out.println("computed x_Phi_x_new using x_Phi_x_old");
+            System.out.println(x_Phi_x+2*v_Phi_x*actualBounceTime + actualBounceTime*actualBounceTime*v_Phi_v);
+
+
 
             System.out.println("U diff");
             System.out.println(v_Phi_x*actualBounceTime + v_Phi_v*actualBounceTime*actualBounceTime/2);
-            System.out.println(- x_Phi_x_new / 2.0 + x_Phi_x_old / 2.0);
-            System.out.println("inertia");
+            System.out.println(- x_Phi_x_new / 2.0 + x_Phi_x / 2.0);
+            System.out.println("inertia, should equal U diff");
             System.out.println(inertia[0]);
-            System.out.println("computed bouncetime ##################################");
+            System.out.println("computed bouncetime");
             System.out.println(bounceTime);
-            System.out.println("should be near zero");
-            System.out.println(inertia[0] - x_Phi_x_new / 2.0 + x_Phi_x_old / 2.0);
+            //System.out.println("should be near zero");
+            //System.out.println(inertia[0] - x_Phi_x_new / 2.0 + x_Phi_x_old / 2.0);
 
 
             MinimumTravelInformation travelInfo = getTimeToBoundary(position, velocity);
