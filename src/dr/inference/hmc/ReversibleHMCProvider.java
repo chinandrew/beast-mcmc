@@ -11,6 +11,10 @@ public interface ReversibleHMCProvider {
 
     void reversiblePositionMomentumUpdate(WrappedVector position, WrappedVector momentum, WrappedVector gradient,
                                           int direction, double time);
+
+    void reversiblePositionMomentumUpdate(WrappedVector position, WrappedVector momentum, WrappedVector inertia, WrappedVector gradient,
+                                          int direction, double time);
+
     void providerUpdatePreconditioning();
 
     double[] getInitialPosition();
@@ -30,6 +34,8 @@ public interface ReversibleHMCProvider {
     void setParameter(double[] position);
 
     WrappedVector drawMomentum();
+
+    WrappedVector drawInertia();
 
     double getJointProbability(WrappedVector momentum);
 
