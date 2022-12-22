@@ -1,23 +1,23 @@
 package dr.inference.operators.hmc;
 import dr.math.matrixAlgebra.WrappedVector;
 
-public class HBPSState {
+public class ParticleStateAll {
     public WrappedVector q;
     public WrappedVector p;
-    public double inertia;
+    public WrappedVector inertia;
     public double logp;
     public WrappedVector phi_q;
     public WrappedVector phi_p;
     public double q_phi_p;
     public double p_phi_p;
-    public HBPSState(WrappedVector q,
-                     WrappedVector p,
-                     double inertia,
-                     double logp,
-                     WrappedVector phi_q,
-                     WrappedVector phi_p,
-                     double q_phi_p,
-                     double p_phi_p){
+    public ParticleStateAll(WrappedVector q,
+                            WrappedVector p,
+                            WrappedVector inertia,
+                            double logp,
+                            WrappedVector phi_q,
+                            WrappedVector phi_p,
+                            double q_phi_p,
+                            double p_phi_p){
         this.q = q;
         this.p = p;
         this.inertia = inertia;

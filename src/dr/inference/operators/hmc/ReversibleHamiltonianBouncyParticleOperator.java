@@ -48,9 +48,6 @@ import static dr.math.matrixAlgebra.ReadableVector.Utils.innerProduct;
  */
 
 public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticleOperator implements Reportable, ReversibleHMCProvider {
-    double[] bounces;
-    double[] inertia;
-    boolean directionFlag;
 
     public ReversibleHamiltonianBouncyParticleOperator(GradientWrtParameterProvider gradientProvider,
                                              PrecisionMatrixVectorProductProvider multiplicationProvider,
@@ -61,10 +58,6 @@ public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticl
                                              MassPreconditionScheduler.Type preconditionSchedulerType) {
         super(gradientProvider, multiplicationProvider, columnProvider, weight, runtimeOptions, nativeOptions,
                 refreshVelocity, mask, null, massPreconditioner, preconditionSchedulerType);
-
-        inertia = new double[] {drawInitialInertia()};
-        bounces = new double[] {0.0, 0.0};
-        directionFlag = true;
     }
 
 
@@ -200,9 +193,11 @@ public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticl
     }
 
     @Override
-    double integrateTrajectory(WrappedVector position, WrappedVector momentum) {
+    double integrateTrajectory(WrappedVector position, WrappedVector momentum) {return 0.0;}
 
-        WrappedVector velocity = drawInitialVelocity();
+    double integrateTrajectory(WrappedVector position, WrappedVector momentum, WrappedVector inertia) {
+
+        WrappedVector velocity = momentum;
         WrappedVector gradient = getInitialGradient();
         WrappedVector action = getPrecisionProduct(velocity);
         BounceState bounceState = new BounceState(drawTotalTravelTime());
@@ -220,12 +215,12 @@ public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticl
             double v_Phi_x = -innerProduct(velocity, gradient);
             double v_Phi_v = innerProduct(velocity, action);
 
-            double bounceTime = getBounceTime(v_Phi_v, v_Phi_x, inertia);
+            double bounceTime = getBounceTime(v_Phi_v, v_Phi_x, inertia.getBuffer());
             MinimumTravelInformation travelInfo = getTimeToBoundary(position, velocity);
 
             bounceState = doBounce(
                     bounceState.remainingTime, bounceTime, travelInfo,
-                    position, velocity, gradient, action, inertia, v_Phi_x, v_Phi_v
+                    position, velocity, gradient, action, inertia.getBuffer(), v_Phi_x, v_Phi_v
             );
 
             recordOneMoreEvent();
@@ -234,35 +229,28 @@ public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticl
         return 0.0;
     }
 
-    public void updateBounceTimes(double time){
-        if (!directionFlag){
-            this.bounces[1] -= time;
-        } else {
-            this.bounces[0] -= time;
-        }
-    }
 
     @Override
-    public void reversiblePositionMomentumUpdate(WrappedVector position, WrappedVector momentum, WrappedVector gradient,
+    public void reversiblePositionMomentumUpdate(WrappedVector position, WrappedVector momentum, WrappedVector inertia, WrappedVector gradient,
                                                  int direction, double time) {
 
         preconditioning.totalTravelTime = time;
         if (direction == -1) {
             // negate momentum
             negateVector(momentum);
-            directionFlag = false;
         }
         // integrate
-        integrateTrajectory(position, momentum);
-        updateBounceTimes(time);
+        integrateTrajectory(position, momentum, inertia);
         if (direction == -1) {
             //negate momentum again
             negateVector(momentum);
-            directionFlag = true;
         }
         ReadableVector.Utils.setParameter(position, parameter);
     }
 
+    @Override
+    public void reversiblePositionMomentumUpdate(WrappedVector position, WrappedVector momentum, WrappedVector gradient,
+                                                 int direction, double time){}
     @Override
     public void providerUpdatePreconditioning() {
         updatePreconditioning(new WrappedVector.Raw(this.getInitialPosition()));

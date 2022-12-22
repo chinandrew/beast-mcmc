@@ -791,6 +791,10 @@ public HamiltonianMonteCarloOperator(AdaptationMode mode, double weight,
     }
 
     @Override
+    public void reversiblePositionMomentumUpdate(WrappedVector position, WrappedVector momentum, WrappedVector inertia, WrappedVector gradient,
+                                          int direction, double time){}
+
+    @Override
     public void providerUpdatePreconditioning() {
         updatePreconditioning();
     }

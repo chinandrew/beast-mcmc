@@ -35,8 +35,6 @@ public interface ReversibleHMCProvider {
 
     WrappedVector drawMomentum();
 
-    WrappedVector drawInertia();
-
     double getJointProbability(WrappedVector momentum);
 
     double getLogLikelihood();

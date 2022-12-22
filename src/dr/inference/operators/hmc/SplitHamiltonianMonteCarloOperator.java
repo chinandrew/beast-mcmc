@@ -269,6 +269,42 @@ public class SplitHamiltonianMonteCarloOperator extends AbstractAdaptableOperato
     }
 
     @Override
+    public void reversiblePositionMomentumUpdate(WrappedVector position, WrappedVector momentum, WrappedVector inertia, WrappedVector gradient,
+                                                 int direction, double time){
+        updateRS();
+
+        double[] positionInnerbuffer = new double[dimInner];
+        double[] positionOuterbuffer = new double[dimOuter];
+
+        double[] momentumAbuffer = new double[dimInner];
+        double[] momentumBbuffer = new double[dimOuter];
+
+        //1:split the position
+        splitWrappedVector(position, positionInnerbuffer, positionOuterbuffer);
+
+        //2:split the momentum
+        splitWrappedVector(momentum, momentumAbuffer, momentumBbuffer);
+
+        WrappedVector positionInner = new WrappedVector.Raw(positionInnerbuffer);
+        WrappedVector positionOuter = new WrappedVector.Raw(positionOuterbuffer);
+        WrappedVector momentumA = new WrappedVector.Raw(momentumAbuffer);
+        WrappedVector momentumB = new WrappedVector.Raw(momentumBbuffer);
+
+        //2:update them
+        for (int i = 0; i < nSplitOuter; i++) {
+            outer.reversiblePositionMomentumUpdate(positionOuter, momentumB, inertia, gradient, direction, .5 * time / nSplitOuter);
+        }
+        inner.reversiblePositionMomentumUpdate(positionInner, momentumA, gradient, direction, relativeScale * time);
+        updateOuterGradient(gradient);
+        for (int i = 0; i < nSplitOuter; i++) {
+            outer.reversiblePositionMomentumUpdate(positionOuter, momentumB, inertia, gradient, direction, .5 * time / nSplitOuter);
+        }
+        //3:merge the position and momentum, update position and momentum
+        updateMergedVector(positionInner, positionOuter, position);
+        updateMergedVector(momentumA, momentumB, momentum);
+    }
+
+    @Override
     public void providerUpdatePreconditioning() {
         inner.providerUpdatePreconditioning();
         outer.providerUpdatePreconditioning();

@@ -59,6 +59,10 @@ public class ReversibleZigZagOperator extends AbstractZigZagOperator implements 
     }
 
     @Override
+    public void reversiblePositionMomentumUpdate(WrappedVector position, WrappedVector momentum, WrappedVector inertia, WrappedVector gradient,
+                                                 int direction, double time){}
+
+    @Override
     public String getOperatorName() {
         return "Zig-zag particle operator";
     }
