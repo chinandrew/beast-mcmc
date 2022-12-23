@@ -39,7 +39,7 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
 
     @Override
     public String getOperatorName() {
-        return "HBPS No-U-Turn Operator";
+        return "State No-U-Turn Operator";
     }
 
     private WrappedVector drawInertia() {
