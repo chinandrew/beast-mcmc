@@ -258,6 +258,7 @@ public class SplitHamiltonianMonteCarloOperator extends AbstractAdaptableOperato
         for (int i = 0; i < nSplitOuter; i++) {
             outer.reversiblePositionMomentumUpdate(positionOuter, momentumB, gradient, direction, .5 * time / nSplitOuter);
         }
+
         inner.reversiblePositionMomentumUpdate(positionInner, momentumA, gradient, direction, relativeScale * time);
         updateOuterGradient(gradient);
         for (int i = 0; i < nSplitOuter; i++) {
@@ -272,7 +273,6 @@ public class SplitHamiltonianMonteCarloOperator extends AbstractAdaptableOperato
     public void reversiblePositionMomentumUpdate(WrappedVector position, WrappedVector momentum, WrappedVector inertia, WrappedVector gradient,
                                                  int direction, double time){
         updateRS();
-
         double[] positionInnerbuffer = new double[dimInner];
         double[] positionOuterbuffer = new double[dimOuter];
 
@@ -289,16 +289,16 @@ public class SplitHamiltonianMonteCarloOperator extends AbstractAdaptableOperato
         WrappedVector positionOuter = new WrappedVector.Raw(positionOuterbuffer);
         WrappedVector momentumA = new WrappedVector.Raw(momentumAbuffer);
         WrappedVector momentumB = new WrappedVector.Raw(momentumBbuffer);
-
         //2:update them
         for (int i = 0; i < nSplitOuter; i++) {
-            outer.reversiblePositionMomentumUpdate(positionOuter, momentumB, inertia, gradient, direction, .5 * time / nSplitOuter);
+            outer.reversiblePositionMomentumUpdate(positionOuter, momentumB, gradient, direction, .5 * time / nSplitOuter);
         }
-        inner.reversiblePositionMomentumUpdate(positionInner, momentumA, gradient, direction, relativeScale * time);
+        inner.reversiblePositionMomentumUpdate(positionInner, momentumA, inertia, gradient, direction, relativeScale * time);
         updateOuterGradient(gradient);
         for (int i = 0; i < nSplitOuter; i++) {
-            outer.reversiblePositionMomentumUpdate(positionOuter, momentumB, inertia, gradient, direction, .5 * time / nSplitOuter);
+            outer.reversiblePositionMomentumUpdate(positionOuter, momentumB, gradient, direction, .5 * time / nSplitOuter);
         }
+
         //3:merge the position and momentum, update position and momentum
         updateMergedVector(positionInner, positionOuter, position);
         updateMergedVector(momentumA, momentumB, momentum);

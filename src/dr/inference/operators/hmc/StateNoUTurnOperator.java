@@ -11,7 +11,7 @@ import dr.math.matrixAlgebra.WrappedVector;
 
 import java.util.Arrays;
 
-public class StateNoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator, Loggable {
+public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator, Loggable {
 
     class Options {
         private double logProbErrorTol = 100.0;
@@ -21,10 +21,10 @@ public class StateNoUTurnOperator extends SimpleMCMCOperator implements GibbsOpe
 
     private final Options options = new Options();
 
-    public StateNoUTurnOperator(ReversibleHMCProvider hmcProvider,
-                                boolean adaptiveStepsize,
-                                int adaptiveDelay,
-                                double weight) {
+    public NoUTurnOperator(ReversibleHMCProvider hmcProvider,
+                           boolean adaptiveStepsize,
+                           int adaptiveDelay,
+                           double weight) {
 
         this.hmcProvider = hmcProvider;
         this.adaptiveStepsize = adaptiveStepsize;
@@ -171,9 +171,8 @@ public class StateNoUTurnOperator extends SimpleMCMCOperator implements GibbsOpe
         final double acceptProb = Math.min(1.0, Math.exp(logJointProbAfter - initialJointDensity));
         final int numAcceptProbStates = 1;
 
-        hmcProvider.setParameter(inParticleState.position.getBuffer());
-
-        return new TreeState(inParticleState, numNodes, flagContinue, acceptProb, numAcceptProbStates);
+        hmcProvider.setParameter(particleState.position.getBuffer());
+        return new TreeState(particleState, numNodes, flagContinue, acceptProb, numAcceptProbStates);
     }
 
     private TreeState buildRecursiveCase(ParticleState particleState, int direction,
@@ -216,7 +215,6 @@ public class StateNoUTurnOperator extends SimpleMCMCOperator implements GibbsOpe
             WrappedVector gradient = new WrappedVector.Raw(Arrays.copyOf(initialGradient, dim));
 
             double probBefore = hmcProvider.getJointProbability(momentum);
-
             hmcProvider.reversiblePositionMomentumUpdate(position, momentum, inertia, gradient, 1, stepSize);
 
             double probAfter = hmcProvider.getJointProbability(momentum);
@@ -242,6 +240,7 @@ public class StateNoUTurnOperator extends SimpleMCMCOperator implements GibbsOpe
                 }
             }
             hmcProvider.setParameter(initialPosition);
+
             return new StepSize(stepSize);
         }
     }
@@ -377,8 +376,9 @@ public class StateNoUTurnOperator extends SimpleMCMCOperator implements GibbsOpe
             setState(direction,
                     nextTree.getPosition(direction),
                     nextTree.getMomentum(direction),
-                    nextTree.getGradient(direction),
-                    nextTree.getInertia(direction));
+                    nextTree.getInertia(direction),
+                    nextTree.getGradient(direction)
+            );
 
 
             updateSample(nextTree);
