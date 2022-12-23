@@ -11,7 +11,7 @@ import dr.math.matrixAlgebra.WrappedVector;
 
 import java.util.Arrays;
 
-public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator, Loggable {
+public class StateNoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator, Loggable {
 
     class Options {
         private double logProbErrorTol = 100.0;
@@ -21,7 +21,7 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
 
     private final Options options = new Options();
 
-    public NoUTurnOperator(ReversibleHMCProvider hmcProvider,
+    public StateNoUTurnOperator(ReversibleHMCProvider hmcProvider,
                            boolean adaptiveStepsize,
                            int adaptiveDelay,
                            double weight) {
