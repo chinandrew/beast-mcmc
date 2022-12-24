@@ -428,8 +428,8 @@ public class SplitHamiltonianMonteCarloOperator extends AbstractAdaptableOperato
         //2:split the momentum
         splitWrappedVector(momentum, momentumAbuffer, momentumBbuffer);
         //todo: better solution. Now only part B has a prior.
-        return inner.getJointProbability(new WrappedVector.Raw(momentumAbuffer))
-                + outer.getJointProbability(new WrappedVector.Raw(momentumBbuffer), inertia)
+        return inner.getJointProbability(new WrappedVector.Raw(momentumAbuffer), inertia)
+                + outer.getJointProbability(new WrappedVector.Raw(momentumBbuffer))
                 - inner.getLogLikelihood();
     }
 
