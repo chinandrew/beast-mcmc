@@ -60,7 +60,9 @@ public class ReversibleZigZagOperator extends AbstractZigZagOperator implements 
 
     @Override
     public void reversiblePositionMomentumUpdate(WrappedVector position, WrappedVector momentum, WrappedVector inertia, WrappedVector gradient,
-                                                 int direction, double time){}
+                                                 int direction, double time){
+        reversiblePositionMomentumUpdate(position, momentum, gradient, direction, time);
+    }
 
     @Override
     public String getOperatorName() {

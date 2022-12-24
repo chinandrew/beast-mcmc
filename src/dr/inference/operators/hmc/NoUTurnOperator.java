@@ -22,9 +22,9 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
     private final Options options = new Options();
 
     public NoUTurnOperator(ReversibleHMCProvider hmcProvider,
-                                boolean adaptiveStepsize,
-                                int adaptiveDelay,
-                                double weight) {
+                           boolean adaptiveStepsize,
+                           int adaptiveDelay,
+                           double weight) {
 
         this.hmcProvider = hmcProvider;
         this.adaptiveStepsize = adaptiveStepsize;
@@ -39,12 +39,13 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
 
     @Override
     public String getOperatorName() {
-        return "State No-U-Turn Operator";
+        return "Inertia No-U-Turn Operator";
     }
 
     private WrappedVector drawInertia() {
         double[] inertia_arr = new double[1];
         inertia_arr[0] = MathUtils.nextExponential(1);
+//        inertia_arr[0] = 0.0;
         return new WrappedVector.Raw(inertia_arr);
     }
 
@@ -58,35 +59,38 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
             }
         }
 
-        final WrappedVector initialPosition = new WrappedVector.Raw(hmcProvider.getInitialPosition());
+        final double[] initialPosition = hmcProvider.getInitialPosition();
         final WrappedVector initialMomentum = hmcProvider.drawMomentum();
         final WrappedVector initialInertia = drawInertia();
         final WrappedVector gradient = new WrappedVector.Raw(hmcProvider.getGradientProvider().getGradientLogDensity());
 
-        final ParticleState particleState = new ParticleState(initialPosition, initialMomentum, initialInertia, gradient);
         if (updatePreconditioning) { //todo: should preconditioning, use a schedular
             hmcProvider.providerUpdatePreconditioning();
         }
 
         if (stepSizeInformation == null) {
-            stepSizeInformation = findReasonableStepSize(initialPosition.getBuffer(),
+            stepSizeInformation = findReasonableStepSize(initialPosition,
                     hmcProvider.getGradientProvider().getGradientLogDensity(), hmcProvider.getStepSize());
         }
         initializeNumEvents();
-        double[] position = takeOneStep(getCount() + 1, particleState);
+        double[] position = takeOneStep(getCount() + 1, initialPosition, initialMomentum, initialInertia, gradient);
 
         hmcProvider.setParameter(position);
         return 0;
     }
 
-    private double[] takeOneStep(long m, ParticleState particleState) {
+    private double[] takeOneStep(long m, double[] initialPosition, WrappedVector initialMomentum, WrappedVector initialInertia, WrappedVector gradient) {
 
-        double[] endPosition = Arrays.copyOf(particleState.position.getBuffer(), particleState.position.getBuffer().length);
+        double[] endPosition = Arrays.copyOf(initialPosition, initialPosition.length);
 
-        final double initialJointDensity = hmcProvider.getJointProbability(particleState.momentum);
+        final double initialJointDensity = hmcProvider.getJointProbability(initialMomentum);
         double logSliceU = Math.log(getUniform()) + initialJointDensity;
 
-        TreeState trajectoryTree = new TreeState(particleState, 1, true);
+        TreeState trajectoryTree = new TreeState(
+                initialPosition,
+                initialMomentum.getBuffer(),
+                initialInertia.getBuffer(),
+                gradient.getBuffer(), 1, true);
 
         int height = 0;
 
@@ -116,7 +120,11 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
 
         final double uniform1 = getUniform();
         int direction = (uniform1 < 0.5) ? -1 : 1;
-        TreeState nextTrajectoryTree = buildTree(trajectoryTree.getState(direction),
+        TreeState nextTrajectoryTree = buildTree(
+                trajectoryTree.getPosition(direction),
+                trajectoryTree.getMomentum(direction),
+                trajectoryTree.getInertia(direction),
+                trajectoryTree.getGradient(direction),
                 direction, logSliceU, depth, stepSizeInformation.getStepSize(), initialJointDensity);
 
         if (nextTrajectoryTree.flagContinue) {
@@ -124,7 +132,7 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
             final double uniform = getUniform();
             final double acceptProb = (double) nextTrajectoryTree.numNodes / (double) trajectoryTree.numNodes;
             if (uniform < acceptProb) {
-                endPosition = nextTrajectoryTree.getSample().position.getBuffer();
+                endPosition = nextTrajectoryTree.getSample();
             }
         }
 
@@ -133,27 +141,27 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
         return endPosition;
     }
 
-    private TreeState buildTree(ParticleState particleState, int direction,
+    private TreeState buildTree(double[] position, double[] momentum, double[] inertia, double[] gradient, int direction,
                                 double logSliceU, int height, double stepSize, double initialJointDensity) {
 
         if (height == 0) {
-            return buildBaseCase(particleState, direction, logSliceU, stepSize, initialJointDensity);
+            return buildBaseCase(position, momentum, inertia, gradient, direction, logSliceU, stepSize, initialJointDensity);
         } else {
-            return buildRecursiveCase(particleState, direction, logSliceU, height, stepSize,
+            return buildRecursiveCase(position, momentum, inertia, gradient, direction, logSliceU, height, stepSize,
                     initialJointDensity);
         }
     }
 
 
-    private TreeState buildBaseCase(ParticleState inParticleState, int direction,
+    private TreeState buildBaseCase(double[] inPosition, double[] inMomentum, double[] inInertia, double[] inGradient, int direction,
                                     double logSliceU, double stepSize, double initialJointDensity) {
         recordOneBaseCall();
         // Make deep copy of position and momentum
-        WrappedVector position = new WrappedVector.Raw(Arrays.copyOf(inParticleState.position.getBuffer(), inParticleState.position.getBuffer().length));
-        WrappedVector momentum = new WrappedVector.Raw(Arrays.copyOf(inParticleState.momentum.getBuffer(), inParticleState.momentum.getBuffer().length));
-        WrappedVector gradient = new WrappedVector.Raw(Arrays.copyOf(inParticleState.gradient.getBuffer(), inParticleState.gradient.getBuffer().length));
-        WrappedVector inertia = new WrappedVector.Raw(Arrays.copyOf(inParticleState.inertia.getBuffer(), inParticleState.inertia.getBuffer().length));
-        ParticleState particleState = new ParticleState(position, momentum, inertia, gradient);
+        WrappedVector position = new WrappedVector.Raw(Arrays.copyOf(inPosition, inPosition.length));
+        WrappedVector momentum = new WrappedVector.Raw(Arrays.copyOf(inMomentum, inMomentum.length));
+        WrappedVector inertia = new WrappedVector.Raw(Arrays.copyOf(inInertia, inInertia.length));
+        WrappedVector gradient = new WrappedVector.Raw(Arrays.copyOf(inGradient, inGradient.length));
+
         hmcProvider.setParameter(position.getBuffer());
 
         // "one reversibleHMC integral
@@ -171,20 +179,26 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
         final double acceptProb = Math.min(1.0, Math.exp(logJointProbAfter - initialJointDensity));
         final int numAcceptProbStates = 1;
 
-        hmcProvider.setParameter(particleState.position.getBuffer());
-        return new TreeState(particleState, numNodes, flagContinue, acceptProb, numAcceptProbStates);
+        hmcProvider.setParameter(inPosition);
+
+        return new TreeState(position.getBuffer(), momentum.getBuffer(), inertia.getBuffer(), gradient.getBuffer(), numNodes, flagContinue
+                , acceptProb,
+                numAcceptProbStates);
     }
 
-    private TreeState buildRecursiveCase(ParticleState particleState, int direction,
+    private TreeState buildRecursiveCase(double[] inPosition, double[] inMomentum, double[] inInertia, double[] gradient, int direction,
                                          double logSliceU, int height, double stepSize, double initialJointDensity) {
 
-        TreeState subtree = buildTree(particleState, direction, logSliceU,
+        TreeState subtree = buildTree(inPosition, inMomentum, inInertia, gradient, direction, logSliceU,
                 height - 1, // Recursion
                 stepSize, initialJointDensity);
 
         if (subtree.flagContinue) {
 
-            TreeState nextSubtree = buildTree(subtree.getState(direction), direction,
+            TreeState nextSubtree = buildTree(subtree.getPosition(direction),
+                    subtree.getMomentum(direction),
+                    subtree.getInertia(direction),
+                    subtree.getGradient(direction), direction,
                     logSliceU, height - 1, stepSizeInformation.getStepSize(), initialJointDensity);
 
             subtree.mergeNextTree(nextSubtree, direction);
@@ -195,8 +209,8 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
 
     private static boolean computeStopCriterion(boolean flagContinue, TreeState state) {
         return computeStopCriterion(flagContinue,
-                state.getPosition(1).getBuffer(), state.getPosition(-1).getBuffer(),
-                state.getMomentum(1).getBuffer(), state.getMomentum(-1).getBuffer());
+                state.getPosition(1), state.getPosition(-1),
+                state.getMomentum(1), state.getMomentum(-1));
     }
 
     private StepSize findReasonableStepSize(double[] initialPosition, double[] initialGradient,
@@ -208,14 +222,14 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
             double stepSize = 0.1;
 
             WrappedVector momentum = hmcProvider.drawMomentum();
-            WrappedVector inertia = drawInertia();
             int count = 1;
             int dim = initialPosition.length;
             WrappedVector position = new WrappedVector.Raw(Arrays.copyOf(initialPosition, dim));
             WrappedVector gradient = new WrappedVector.Raw(Arrays.copyOf(initialGradient, dim));
 
             double probBefore = hmcProvider.getJointProbability(momentum);
-            hmcProvider.reversiblePositionMomentumUpdate(position, momentum, inertia, gradient, 1, stepSize);
+            System.out.println("-------------------------------");
+            hmcProvider.reversiblePositionMomentumUpdate(position, momentum, gradient, 1, stepSize);
 
             double probAfter = hmcProvider.getJointProbability(momentum);
 
@@ -226,7 +240,7 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
             while (Math.pow(probRatio, a) > Math.pow(2, -a)) {
 
                 probBefore = probAfter;
-                hmcProvider.reversiblePositionMomentumUpdate(position, momentum, inertia, gradient, 1, stepSize);
+                hmcProvider.reversiblePositionMomentumUpdate(position, momentum, gradient, 1, stepSize);
 
                 probAfter = hmcProvider.getJointProbability(momentum);
                 probRatio = Math.exp(probAfter - probBefore);
@@ -240,7 +254,6 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
                 }
             }
             hmcProvider.setParameter(initialPosition);
-
             return new StepSize(stepSize);
         }
     }
@@ -300,18 +313,24 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
 
     private class TreeState {
 
-        private TreeState(ParticleState particleState,
+        private TreeState(double[] position, double[] moment, double[] inertia, double[] gradient,
                           int numNodes, boolean flagContinue) {
-            this(particleState, numNodes, flagContinue, 0.0, 0);
+            this(position, moment, inertia, gradient, numNodes, flagContinue, 0.0, 0);
         }
 
-        private TreeState(ParticleState particleState,
+        private TreeState(double[] position, double[] moment, double[] inertia, double[] gradient,
                           int numNodes, boolean flagContinue,
                           double cumAcceptProb, int numAcceptProbStates) {
-            this.particleState = new ParticleState[3];
+            this.position = new double[3][];
+            this.momentum = new double[3][];
+            this.inertia = new double[3][];
+            this.gradient = new double[3][]; //todo: (for gradient) no need for 3 but 2? If changed to 2, getIndex should also be changed
 
             for (int i = 0; i < 3; ++i) {
-                this.particleState[i] = particleState;
+                this.position[i] = position;
+                this.momentum[i] = moment;
+                this.inertia[i] = inertia;
+                this.gradient[i] = gradient;
             }
 
             // Recursion variables
@@ -323,48 +342,48 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
             this.numAcceptProbStates = numAcceptProbStates;
         }
 
-        private WrappedVector getPosition(int direction) {
-            return particleState[getIndex(direction)].position;
+        private double[] getPosition(int direction) {
+            return position[getIndex(direction)];
         }
 
-        private WrappedVector getMomentum(int direction) {
-            return particleState[getIndex(direction)].momentum;
+        private double[] getMomentum(int direction) {
+            return momentum[getIndex(direction)];
         }
 
-        private WrappedVector getGradient(int direction) {
-            return particleState[getIndex(direction)].gradient;
+        private double[] getInertia(int direction) {
+            return inertia[getIndex(direction)];
         }
 
-        private WrappedVector getInertia(int direction) {
-            return particleState[getIndex(direction)].inertia;
+        private double[] getGradient(int direction) {
+            return gradient[getIndex(direction)];
         }
 
-        private ParticleState getSample() {
+        private double[] getSample() {
             /*
             Returns a state chosen uniformly from the acceptable states along a hamiltonian dynamics trajectory tree.
             The sample is updated recursively while building trees.
             */
-            return particleState[getIndex(0)];
+            return position[getIndex(0)];
         }
 
-        private ParticleState getState(int direction) {
-            return particleState[getIndex(direction)];
+        private void setPosition(int direction, double[] position) {
+            this.position[getIndex(direction)] = position;
         }
 
-        private void setState(int direction, WrappedVector position, WrappedVector momentum, WrappedVector inertia, WrappedVector gradient) {
-            this.particleState[getIndex(direction)].position = position;
-            this.particleState[getIndex(direction)].momentum = momentum;
-            this.particleState[getIndex(direction)].inertia = inertia;
-            this.particleState[getIndex(direction)].gradient = gradient;
+        private void setMomentum(int direction, double[] momentum) {
+            this.momentum[getIndex(direction)] = momentum;
         }
 
-
-        private void setSample(WrappedVector position, WrappedVector momentum, WrappedVector inertia, WrappedVector gradient) {
-            setState(0, position, momentum, inertia, gradient);
+        private void setInertia(int direction, double[] inertia) {
+            this.inertia[getIndex(direction)] = inertia;
         }
 
-        private void setSample(ParticleState particleState) {
-            setState(0, particleState.position, particleState.momentum, particleState.inertia, particleState.gradient);
+        private void setGradient(int direction, double[] gradient) {
+            this.gradient[getIndex(direction)] = gradient;
+        }
+
+        private void setSample(double[] position) {
+            setPosition(0, position);
         }
 
         private int getIndex(int direction) { // valid directions: -1, 0, +1
@@ -373,13 +392,11 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
         }
 
         private void mergeNextTree(TreeState nextTree, int direction) {
-            setState(direction,
-                    nextTree.getPosition(direction),
-                    nextTree.getMomentum(direction),
-                    nextTree.getInertia(direction),
-                    nextTree.getGradient(direction)
-            );
 
+            setPosition(direction, nextTree.getPosition(direction));
+            setMomentum(direction, nextTree.getMomentum(direction));
+            setInertia(direction, nextTree.getInertia(direction));
+            setGradient(direction, nextTree.getGradient(direction));
 
             updateSample(nextTree);
 
@@ -398,7 +415,11 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
             }
         }
 
-        final private ParticleState[] particleState;
+        final private double[][] position;
+        final private double[][] momentum;
+        final private double[][] inertia;
+        final private double[][] gradient;
+
         private int numNodes;
         private boolean flagContinue;
 
