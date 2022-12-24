@@ -844,7 +844,7 @@ public HamiltonianMonteCarloOperator(AdaptationMode mode, double weight,
 
     @Override
     public double getJointProbability(WrappedVector momentum, WrappedVector inertia) {
-        return gradientProvider.getLikelihood().getLogLikelihood() - getKineticEnergy(momentum) - getParameterLogJacobian() - inertia.getBuffer()[0];
+        return getJointProbability(momentum);
     }
 
     @Override
