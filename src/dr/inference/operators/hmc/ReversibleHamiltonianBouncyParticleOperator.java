@@ -306,6 +306,11 @@ public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticl
     }
 
     @Override
+    public double getJointProbability(WrappedVector momentum, WrappedVector inertia) {
+        return gradientProvider.getLikelihood().getLogLikelihood() - getKineticEnergy(momentum) - getParameterLogJacobian() - inertia.getBuffer()[0];
+    }
+
+    @Override
     public double getLogLikelihood() {
         return gradientProvider.getLikelihood().getLogLikelihood();
     }
@@ -314,14 +319,13 @@ public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticl
     public double getKineticEnergy(ReadableVector momentum) {
 
         final int dim = momentum.getDim();
+
         double energy = 0.0;
-
         for (int i = 0; i < dim; i++) {
-            energy += Math.abs(momentum.get(i));
+            energy += momentum.get(i) * momentum.get(i);
         }
-        return energy;
+        return energy / 2.0;
     }
-
     @Override
     public double getStepSize() {
         return preconditioning.totalTravelTime;

@@ -83,7 +83,7 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
 
         double[] endPosition = Arrays.copyOf(initialPosition, initialPosition.length);
 
-        final double initialJointDensity = hmcProvider.getJointProbability(initialMomentum);
+        final double initialJointDensity = hmcProvider.getJointProbability(initialMomentum, initialInertia);
         double logSliceU = Math.log(getUniform()) + initialJointDensity;
 
         TreeState trajectoryTree = new TreeState(
@@ -169,7 +169,7 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
 
         recordEvents();
 
-        double logJointProbAfter = hmcProvider.getJointProbability(momentum);
+        double logJointProbAfter = hmcProvider.getJointProbability(momentum, inertia);
 
         final int numNodes = (logSliceU <= logJointProbAfter ? 1 : 0);
 
@@ -215,7 +215,7 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
 
     private StepSize findReasonableStepSize(double[] initialPosition, double[] initialGradient,
                                             double forcedInitialStepSize) {
-
+        // NOT USED
         if (forcedInitialStepSize != 0) {
             return new StepSize(forcedInitialStepSize);
         } else {

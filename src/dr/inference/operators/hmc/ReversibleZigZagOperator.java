@@ -656,6 +656,11 @@ public class ReversibleZigZagOperator extends AbstractZigZagOperator implements 
     }
 
     @Override
+    public double getJointProbability(WrappedVector momentum, WrappedVector inertia) {
+        return gradientProvider.getLikelihood().getLogLikelihood() - getKineticEnergy(momentum) - getParameterLogJacobian() - inertia.getBuffer()[0];
+    }
+
+    @Override
     public double getLogLikelihood() {
         return gradientProvider.getLikelihood().getLogLikelihood();
     }
