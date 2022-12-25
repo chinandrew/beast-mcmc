@@ -136,7 +136,7 @@ public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticl
         if (remainingTime < Math.min(timeToBoundary, bounceTime)) { // No event during remaining time
 
             updatePosition(position, velocity, remainingTime);
-            updateGradient(gradient, remainingTime, action);
+//            updateGradient(gradient, remainingTime, action);
             updateInertia(inertia, remainingTime, v_Phi_x, v_Phi_v);
             finalBounceState = new BounceState(Type.NONE, -1, 0.0);
         } else {
