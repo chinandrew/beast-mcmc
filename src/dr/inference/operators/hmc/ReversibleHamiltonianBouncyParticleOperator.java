@@ -226,7 +226,7 @@ public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticl
 
             recordOneMoreEvent();
         }
-        storeVelocity(velocity);
+        // storeVelocity(velocity);
         return 0.0;
     }
 
