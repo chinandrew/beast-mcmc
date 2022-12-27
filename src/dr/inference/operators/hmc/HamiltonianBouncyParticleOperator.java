@@ -100,7 +100,7 @@ public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator 
 
             recordOneMoreEvent();
         }
-        storeVelocity(velocity);
+        // storeVelocity(velocity);
         return 0.0;
     }
 
