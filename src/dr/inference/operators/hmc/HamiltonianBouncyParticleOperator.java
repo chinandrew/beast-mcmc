@@ -43,6 +43,11 @@ import static dr.math.matrixAlgebra.ReadableVector.Utils.innerProduct;
  * @author Marc A. Suchard
  */
 
+/**
+ * Not to be used for NUTS, which requires a final inertia update
+ * that is not required for standard HBPS.
+ * The ReversibleHamiltonianBouncyParticleOperator is to be used with NUTS.
+ */
 public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator implements Loggable {
 
     public HamiltonianBouncyParticleOperator(GradientWrtParameterProvider gradientProvider,
@@ -66,7 +71,7 @@ public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator 
 
         WrappedVector velocity = drawInitialVelocity();
         WrappedVector gradient = getInitialGradient();
-        WrappedVector action = getPrecisionProduct(velocity);
+        WrappedVector action = new WrappedVector.Raw(new double[] {0.0}); // initialize to empty array since it gets computed on line 219
         double[] inertia = new double[1]; // array so retains state
         inertia[0] = drawInitialInertia();
         BounceState bounceState = new BounceState(drawTotalTravelTime());
