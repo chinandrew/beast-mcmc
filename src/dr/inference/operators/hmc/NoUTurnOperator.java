@@ -228,7 +228,6 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
             WrappedVector gradient = new WrappedVector.Raw(Arrays.copyOf(initialGradient, dim));
 
             double probBefore = hmcProvider.getJointProbability(momentum);
-            System.out.println("-------------------------------");
             hmcProvider.reversiblePositionMomentumUpdate(position, momentum, gradient, 1, stepSize);
 
             double probAfter = hmcProvider.getJointProbability(momentum);
