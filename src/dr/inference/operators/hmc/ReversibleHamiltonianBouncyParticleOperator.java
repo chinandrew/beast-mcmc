@@ -204,7 +204,6 @@ public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticl
     double integrateTrajectory(WrappedVector position, WrappedVector momentum) {return 0.0;}
 
     double integrateTrajectory(WrappedVector position, WrappedVector velocity, WrappedVector inertia) {
-
         WrappedVector gradient = getInitialGradient();
         WrappedVector action = new WrappedVector.Raw(new double[] {0.0}); // initialize to empty array since it gets computed on line 219
         BounceState bounceState = new BounceState(drawTotalTravelTime());
@@ -304,9 +303,15 @@ public class ReversibleHamiltonianBouncyParticleOperator extends AbstractParticl
     }
 
     @Override
+    public WrappedVector drawInitialMomentum() {
+        return drawInitialVelocity();
+    }
+
+    @Override
     public WrappedVector drawMomentum() {
         return drawInitialVelocity();
     }
+
 
     @Override
     public double getJointProbability(WrappedVector momentum) {

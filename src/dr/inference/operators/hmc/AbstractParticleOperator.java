@@ -163,6 +163,13 @@ public abstract class AbstractParticleOperator extends SimpleMCMCOperator implem
         return categoryClasses;
     }
 
+    private WrappedVector drawInertia() {
+        double[] inertia_arr = new double[1];
+        inertia_arr[0] = MathUtils.nextExponential(1);
+//        inertia_arr[0] = 0.0;
+        return new WrappedVector.Raw(inertia_arr);
+    }
+
     @Override
     public double doOperation() {
 
@@ -170,11 +177,12 @@ public abstract class AbstractParticleOperator extends SimpleMCMCOperator implem
 
         WrappedVector momentum = drawInitialMomentum();
 
+        WrappedVector inertia = drawInertia();
         if (preconditionScheduler.shouldUpdatePreconditioning()) {
             updatePreconditioning(position);
         }
 
-        double hastingsRatio = integrateTrajectory(position, momentum);
+        double hastingsRatio = integrateTrajectory(position, momentum, inertia);
 
         setParameter(position, parameter);
 
@@ -186,6 +194,9 @@ public abstract class AbstractParticleOperator extends SimpleMCMCOperator implem
     }
 
     abstract double integrateTrajectory(WrappedVector position, WrappedVector momentum);
+
+    abstract double integrateTrajectory(WrappedVector position, WrappedVector momentum, WrappedVector inertia);
+
 
     WrappedVector drawInitialMomentum() {
         return new WrappedVector.Raw(null, 0, 0);

@@ -62,6 +62,11 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
     }
 
     @Override
+    final double integrateTrajectory(WrappedVector position, WrappedVector momentum, WrappedVector inertia) {
+        return integrateTrajectory(position, momentum);
+    }
+
+    @Override
     double integrateTrajectory(WrappedVector position, WrappedVector momentum) {
 
         WrappedVector velocity = drawInitialVelocity();

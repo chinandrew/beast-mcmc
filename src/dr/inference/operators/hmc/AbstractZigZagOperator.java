@@ -28,6 +28,9 @@ abstract class AbstractZigZagOperator extends AbstractParticleOperator implement
                 refreshVelocity, mask, categoryClass, massPreconditioner, preconditionSchedulerType);
         this.taskPool = (threadCount > 1) ? new TaskPool(gradientProvider.getDimension(), threadCount) : null;
     }
+    final double integrateTrajectory(WrappedVector position, WrappedVector momentum, WrappedVector inertia) {
+        return integrateTrajectory(position, momentum);
+    }
 
     final double integrateTrajectory(WrappedVector position, WrappedVector momentum) {
 

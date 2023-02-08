@@ -67,6 +67,11 @@ public class HamiltonianBouncyParticleOperator extends AbstractParticleOperator 
     }
 
     @Override
+    final double integrateTrajectory(WrappedVector position, WrappedVector momentum, WrappedVector inertia) {
+        return integrateTrajectory(position, momentum);
+    }
+
+    @Override
     double integrateTrajectory(WrappedVector position, WrappedVector momentum) {
 
         WrappedVector velocity = drawInitialVelocity();
