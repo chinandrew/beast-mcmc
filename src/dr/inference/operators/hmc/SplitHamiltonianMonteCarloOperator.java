@@ -53,7 +53,6 @@ public class SplitHamiltonianMonteCarloOperator extends AbstractAdaptableOperato
         dimInner = inner.getInitialPosition().length;
         dimOuter = outer.getInitialPosition().length;
         this.parameter = parameter;
-
         this.stepSize = stepSize;
         this.relativeScale = relativeScale;
         this.nSteps = nSteps;
@@ -158,6 +157,13 @@ public class SplitHamiltonianMonteCarloOperator extends AbstractAdaptableOperato
         return (inner.getParameterLogJacobian() == 0 && outer.getParameterLogJacobian() == 0) ? false : true;
     }
 
+    private WrappedVector drawInertia() {
+        double[] inertia_arr = new double[1];
+        inertia_arr[0] = MathUtils.nextExponential(1);
+//        inertia_arr[0] = 0.0;
+        return new WrappedVector.Raw(inertia_arr);
+    }
+
     private double mergedUpdate() {
 
         double[] positionInnerbuffer = inner.getInitialPosition();
@@ -169,6 +175,7 @@ public class SplitHamiltonianMonteCarloOperator extends AbstractAdaptableOperato
         WrappedVector momentumInner = inner.drawMomentum();
         WrappedVector momentumOuter = outer.drawMomentum();
 
+        WrappedVector inertia = drawInertia();
         WrappedVector gradientInner = new WrappedVector.Raw(inner.getGradientProvider().getGradientLogDensity());
         WrappedVector gradientOuter = new WrappedVector.Raw(outer.getGradientProvider().getGradientLogDensity());
 
@@ -179,7 +186,7 @@ public class SplitHamiltonianMonteCarloOperator extends AbstractAdaptableOperato
             for (int j = 0; j < nSplitOuter; j++) {
                 outer.reversiblePositionMomentumUpdate(positionOuter, momentumOuter, gradientOuter,1, .5 * stepSize / nSplitOuter);
             }
-            inner.reversiblePositionMomentumUpdate(positionInner, momentumInner, gradientInner, 1,
+            inner.reversiblePositionMomentumUpdate(positionInner, momentumInner, inertia, gradientInner, 1,
                     relativeScale * stepSize);
             updateOuterGradient(gradientOuter);
             for (int j = 0; j < nSplitOuter; j++) {
