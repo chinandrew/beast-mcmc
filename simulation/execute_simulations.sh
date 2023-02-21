@@ -6,7 +6,6 @@ qsub -q "shared.q@compute-124"  -l mem_free="16G",h_vmem="16G" -N p_hbps_hnuts66
 qsub -q "shared.q@compute-124"  -l mem_free="16G",h_vmem="16G" -N p_hbps_hnuts670 -m e -M achin23@jhu.edu -v seed=670,output=hbps_hnuts670,xml=24t_HBPS_NUTS_0-001.xml phylogenetic.sh
 
 
-
 # HNUTS split
 qsub -q "shared.q@compute-124"  -l mem_free="16G",h_vmem="16G" -N p_hnuts666 -m e -M achin23@jhu.edu -v seed=666,output=hnuts666,xml=24t_HNUTS.xml phylogenetic.sh
 qsub -q "shared.q@compute-124"  -l mem_free="16G",h_vmem="16G" -N p_hnuts667 -m e -M achin23@jhu.edu -v seed=667,output=hnuts667,xml=24t_HNUTS.xml phylogenetic.sh
