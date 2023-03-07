@@ -8875,7 +8875,7 @@
 
     </operators>
     <!-- Define MCMC                                                             -->
-    <mcmc id="mcmc" chainLength="200000" autoOptimize="false" adaptation="false"
+    <mcmc id="mcmc" chainLength="50000" autoOptimize="false" adaptation="false"
           operatorAnalysis="28traits_byBeauti.ops">
         <joint id="joint">
             <prior id="prior">
