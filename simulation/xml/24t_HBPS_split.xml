@@ -8827,50 +8827,45 @@
     </compoundParameter>
     <!-- Define operators                                                        -->
     <operators id="operators" optimizationSchedule="default">
+        <NoUTurnOperator id="NUTS1" weight="100" adaptiveStepsize="false">
+            <reversibleHamiltonianBouncyParticleOperator weight="100" autoOptimize="false" preconditioningUpdateFrequency="0">
+                <traitGradientOnTree id="gradient">
+                    <traitDataLikelihood idref="scalarLikelihood"/>
+                </traitGradientOnTree>
+                <precisionTraitProductOnTree id="product" mode="linear" traitName="latent" roughTravelTimeGuess="0.001">
+                    <traitDataLikelihood idref="scalarLikelihood"/>
+                </precisionTraitProductOnTree>
+                <precisionColumnOnTree id="precisionColumn">
+                    <kroneckerProduct>
+                        <precisionTraitProductOnTree>
+                            <traitDataLikelihood idref="elementaryLikelihood"/>
+                        </precisionTraitProductOnTree>
+                        <multivariateDiffusionModel idref="diffusionModel"/>
+                    </kroneckerProduct>
+                </precisionColumnOnTree>
+                <mask>
+                    <parameter idref="mask"/>
+                </mask>
+            </reversibleHamiltonianBouncyParticleOperator>
+        </NoUTurnOperator>
 
-        <NoUTurnOperator id="NUTS" weight="100" adaptiveStepsize="true">
-            <splitHamiltonianMonteCarloOperator weight="1" nSteps="1" nInnerSteps="1" stepSize="0.001"
-                                                relativeScale="1" updateRelativeScaleFrequency="1"
-                                                updateRelativeScaleDelay="1" getRelativeScaleDelay="12000"
-                                                getRelativeScaleFrequency="2000">
-                <compoundParameter idref="all"/>
-                <reversibleHamiltonianBouncyParticleOperator weight="1" autoOptimize="false" preconditioningUpdateFrequency="0">
-                    <traitGradientOnTree id="gradient">
-                        <traitDataLikelihood idref="scalarLikelihood"/>
-                    </traitGradientOnTree>
-                    <precisionTraitProductOnTree id="product" mode="linear" traitName="latent" roughTravelTimeGuess="0.5">
-                        <traitDataLikelihood idref="scalarLikelihood"/>
-                    </precisionTraitProductOnTree>
-                    <precisionColumnOnTree id="precisionColumn">
-                        <kroneckerProduct>
-                            <precisionTraitProductOnTree>
-                                <traitDataLikelihood idref="elementaryLikelihood"/>
-                            </precisionTraitProductOnTree>
-                            <multivariateDiffusionModel idref="diffusionModel"/>
-                        </kroneckerProduct>
-                    </precisionColumnOnTree>
-                    <mask>
-                        <parameter idref="mask"/>
-                    </mask>
-                </reversibleHamiltonianBouncyParticleOperator>
+        <NoUTurnOperator id="NUTS2" weight="100" adaptiveStepsize="true">
 
-                <hamiltonianMonteCarloOperator id="hmc" weight="1" nSteps="10" stepSize="0.01" mode="vanilla"
-                                               drawVariance="1.0" gradientCheckCount="0" gradientCheckTolerance="0.01">
-                    <compoundParameter idref="correlationAndDiag"/>
-                    <compoundGradient>
-                        <jointGradient idref="jointGradientForCorrelation"/>
-                        <jointGradient idref="jointGradientForDiagonal"/>
-                    </compoundGradient>
-                    <mask>
-                        <parameter idref="mask.hmc"/>
-                    </mask>
-                    <multivariateCompoundTransform>
-                        <LKJTransform dimension="24"/>
-                        <transform type="log" dim="24"/>
-                    </multivariateCompoundTransform>
-                </hamiltonianMonteCarloOperator>
-            </splitHamiltonianMonteCarloOperator>
-
+            <hamiltonianMonteCarloOperator id="hmc" weight="100" nSteps="10" stepSize="0.01" mode="vanilla"
+                                           drawVariance="1.0" gradientCheckCount="10" gradientCheckTolerance="0.01">
+                <compoundParameter idref="correlationAndDiag"/>
+                <compoundGradient>
+                    <jointGradient idref="jointGradientForCorrelation"/>
+                    <jointGradient idref="jointGradientForDiagonal"/>
+                </compoundGradient>
+                <mask>
+                    <parameter idref="mask.hmc"/>
+                </mask>
+                <multivariateCompoundTransform>
+                    <LKJTransform dimension="24"/>
+                    <transform type="log" dim="24"/>
+                </multivariateCompoundTransform>
+            </hamiltonianMonteCarloOperator>
         </NoUTurnOperator>
 
         <randomWalkOperator windowSize="1.0" weight="10">
@@ -8880,7 +8875,7 @@
 
     </operators>
     <!-- Define MCMC                                                             -->
-    <mcmc id="mcmc" chainLength="20000" autoOptimize="false" adaptation="false"
+    <mcmc id="mcmc" chainLength="50000" autoOptimize="false" adaptation="false"
           operatorAnalysis="28traits_byBeauti.ops">
         <joint id="joint">
             <prior id="prior">
@@ -8896,7 +8891,7 @@
         </joint>
         <operators idref="operators"/>
         <!-- write log to screen                                                     -->
-        <log id="screenLog" logEvery="100000">
+        <log id="screenLog" logEvery="1000">
             <column label="Joint" dp="4" width="12">
                 <joint idref="joint"/>
             </column>
@@ -8908,7 +8903,7 @@
             </column>
         </log>
         <!--write log to file                                                       -->
-        <log id="fileLog1" logEvery="1" fileName="corr_24t_HNUTS.log">
+        <log id="fileLog1" logEvery="1" fileName="corr_24t_HBPS_NUTS.log">
             <joint idref="joint"/>
             <prior idref="prior"/>
             <likelihood idref="likelihood"/>
@@ -8918,15 +8913,15 @@
             <matrixParameter idref="precisionMatrix"/>
             <!--       <parameter idref="leafTraits"/> -->
         </log>
-        <log logEvery="10" fileName="latent_24t_HNUTS.log">
+        <log logEvery="10" fileName="latent_24t_HBPS_NUTS.log">
             <parameter idref="leafTraits"/>
         </log>
 
+
     </mcmc>
-    <report fileName="HNUTS_24t_time.txt">
+    <report fileName="HBPS_NUTS_24t_time.txt">
         <property name="timer">
             <mcmc idref="mcmc"/>
         </property>
     </report>
-
 </beast>

@@ -1,37 +1,20 @@
-# BEAST
+# Code for Section 5.3 of "MCMC using bouncy Hamiltonian dynamics: A unifying framework for Hamiltonian Monte Carlo and piecewise deterministic Markov process samplers" by Chin et al. 2024
 
-BEAST is a cross-platform program for Bayesian analysis of molecular sequences using MCMC. It is entirely orientated towards rooted, time-measured phylogenies inferred using strict or relaxed molecular clock models. It can be used as a method of reconstructing phylogenies but is also a framework for testing evolutionary hypotheses without conditioning on a single tree topology. BEAST uses MCMC to average over tree space, so that each tree is weighted proportional to its posterior probability. We include a simple to use user-interface program for setting up standard analyses and a suit of programs for analysing the results.
+## Setting up BEAST
+This code is a fork of the [BEAST](https://github.com/beast-dev/beast-mcmc) software, modified with the Hamiltonian Bouncy Particle Sampler of Chin et al. 
 
-## Download BEAST
+1. Clone the `hbps_develop` branch: `git clone -b hbps_develop git@github.com:chinandrew/beast-mcmc.git`
+2. Enter the cloned directory and build the software with Apache ant: `cd beast-mcmc; ant`
 
-[Download BEAST v1.10.X binaries for Mac, Windows and UNIX/Linux](https://github.com/beast-dev/beast-mcmc/releases)
+A `beast.jar` file should now be located in `build/dist`, which is run in the next step.
 
-[Latest stable release ![Release Version](https://img.shields.io/github/release/beast-dev/beast-mcmc.svg?style=plastic) ![Release Date](https://img.shields.io/github/release-date/beast-dev/beast-mcmc.svg?style=plastic)](https://github.com/beast-dev/beast-mcmc/releases/latest/) ![Downloads](https://img.shields.io/github/downloads/beast-dev/beast-mcmc/v1.10.4/total.svg?style=plastic)
+## Running BEAST
+BEAST can be run with the following command:
+```
+java -jar ${path_to_beast_jar} -seed ${seed} ${path_to_input_xml}
+```
+where `path_to_beast_jar` and `path_to_input_xml` specify paths to the `beast.jar` and XML file and `seed` specifies the random seed.
+XML files can be found in `simulation/xml`, with the three XML files `24t_HBPS.xml`, `24t_HBPS_split.xml`, and `24t_BPS.xml`.
 
-[Latest development release ![Development Version](https://img.shields.io/github/release/beast-dev/beast-mcmc/all.svg?style=plastic) ![Development Date](https://img.shields.io/github/release-date-pre/beast-dev/beast-mcmc.svg?style=plastic)](https://github.com/beast-dev/beast-mcmc/releases/latest/) ![Downloads](https://img.shields.io/github/downloads-pre/beast-dev/beast-mcmc/latest/total.svg?style=plastic)
-
-
-[The previous major release of BEAST was v1.8.4 --- binaries for Mac, Windows and UNIX/Linux](https://github.com/beast-dev/beast-mcmc/releases/tag/v1.8.4) ![Downloads](https://img.shields.io/github/downloads/beast-dev/beast-mcmc/v1.8.4/total.svg?style=plastic)
-
-[Older BEAST Downloads](https://code.google.com/p/beast-mcmc/downloads)
-
-## Other Downloads
-
-[BEASTGen v1.0.2 .tgz file](https://drive.google.com/file/d/0B37cqWL7UhTAVFVhQ2o1Y093b1k)
-
-[BEASTGen v1.0.2 .ZIP file](https://drive.google.com/file/d/0B37cqWL7UhTAWm81VklIeUNtQVU)
-
-# Documentation
-
-[BEAST Documentation Website](http://beast.community)
-
-# Development software
-
-We use IntelliJ IDEA and java profiling via [JProfile](https://www.ej-technologies.com/products/jprofiler/overview.html) and YourKit
-
-# Acknowledgements
-- This work was supported in part by the European Union Seventh Framework Programme for research, technological development and demonstration under Grant Agreement no. 278433-PREDEMICS and no. 725422-ReservoirDOCS, the Wellcome Trust through collaborator award 206298/Z/17/Z, NSF grant DMS 1264153 and NIH grants R01 HG006139, R01 AI107034 and U19 AI135995.
-
----
-
+Running BEAST will output a file `corr_24t_HNUTS.log` containing the samples, of which the `precisionMatrix` columns are the ones of interest.
 

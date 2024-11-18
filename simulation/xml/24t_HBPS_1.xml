@@ -8827,29 +8827,28 @@
     </compoundParameter>
     <!-- Define operators                                                        -->
     <operators id="operators" optimizationSchedule="default">
-        <NoUTurnOperator id="NUTS1" weight="100" adaptiveStepsize="false">
-            <reversibleHamiltonianBouncyParticleOperator weight="100" autoOptimize="false" preconditioningUpdateFrequency="0">
-                <traitGradientOnTree id="gradient">
-                    <traitDataLikelihood idref="scalarLikelihood"/>
-                </traitGradientOnTree>
-                <precisionTraitProductOnTree id="product" mode="linear" traitName="latent" roughTravelTimeGuess="0.001">
-                    <traitDataLikelihood idref="scalarLikelihood"/>
-                </precisionTraitProductOnTree>
-                <precisionColumnOnTree id="precisionColumn">
-                    <kroneckerProduct>
-                        <precisionTraitProductOnTree>
-                            <traitDataLikelihood idref="elementaryLikelihood"/>
-                        </precisionTraitProductOnTree>
-                        <multivariateDiffusionModel idref="diffusionModel"/>
-                    </kroneckerProduct>
-                </precisionColumnOnTree>
-                <mask>
-                    <parameter idref="mask"/>
-                </mask>
-            </reversibleHamiltonianBouncyParticleOperator>
-        </NoUTurnOperator>
 
-        <NoUTurnOperator id="NUTS2" weight="100" adaptiveStepsize="true">
+        <reversibleHamiltonianBouncyParticleOperator traitName="latent" weight="100" autoOptimize="false" preconditioningUpdateFrequency="0">
+            <traitGradientOnTree id="gradient">
+                <traitDataLikelihood idref="scalarLikelihood"/>
+            </traitGradientOnTree>
+            <precisionTraitProductOnTree id="product" mode="linear" traitName="latent" roughTravelTimeGuess="1">
+                <traitDataLikelihood idref="scalarLikelihood"/>
+            </precisionTraitProductOnTree>
+            <precisionColumnOnTree id="precisionColumn">
+                <kroneckerProduct>
+                    <precisionTraitProductOnTree>
+                        <traitDataLikelihood idref="elementaryLikelihood"/>
+                    </precisionTraitProductOnTree>
+                    <multivariateDiffusionModel idref="diffusionModel"/>
+                </kroneckerProduct>
+            </precisionColumnOnTree>
+            <mask>
+                <parameter idref="mask"/>
+            </mask>
+        </reversibleHamiltonianBouncyParticleOperator>
+
+        <NoUTurnOperator id="NUTS" weight="100" adaptiveStepsize="true">
 
             <hamiltonianMonteCarloOperator id="hmc" weight="100" nSteps="10" stepSize="0.01" mode="vanilla"
                                            drawVariance="1.0" gradientCheckCount="10" gradientCheckTolerance="0.01">
@@ -8875,7 +8874,7 @@
 
     </operators>
     <!-- Define MCMC                                                             -->
-    <mcmc id="mcmc" chainLength="50000" autoOptimize="false" adaptation="false"
+    <mcmc id="mcmc" chainLength="500000" autoOptimize="false" adaptation="false"
           operatorAnalysis="28traits_byBeauti.ops">
         <joint id="joint">
             <prior id="prior">
@@ -8903,7 +8902,7 @@
             </column>
         </log>
         <!--write log to file                                                       -->
-        <log id="fileLog1" logEvery="10" fileName="corr_24t_HBPS_NUTS.log">
+        <log id="fileLog1" logEvery="10" fileName="corr_24t_HBPS.log">
             <joint idref="joint"/>
             <prior idref="prior"/>
             <likelihood idref="likelihood"/>
@@ -8913,13 +8912,13 @@
             <matrixParameter idref="precisionMatrix"/>
             <!--       <parameter idref="leafTraits"/> -->
         </log>
-        <log logEvery="1000" fileName="latent_24t_HBPS_NUTS.log">
+        <log logEvery="10000" fileName="latent_24t_HBPS.log">
             <parameter idref="leafTraits"/>
         </log>
 
 
     </mcmc>
-    <report fileName="HBPS_NUTS_24t_time.txt">
+    <report fileName="HBPS_24t_time.txt">
         <property name="timer">
             <mcmc idref="mcmc"/>
         </property>
