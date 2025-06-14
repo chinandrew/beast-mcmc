@@ -1,4 +1,4 @@
-# Code for Section 5.3 of "MCMC using bouncy Hamiltonian dynamics: A unifying framework for Hamiltonian Monte Carlo and piecewise deterministic Markov process samplers" by Chin et al. 2024
+# Code for Section 5.3 of "MCMC using bouncy Hamiltonian dynamics: A unifying framework for Hamiltonian Monte Carlo and piecewise deterministic Markov process samplers" by Chin and Nishimura 2024
 
 ## Setting up BEAST
 This code is a fork of the [BEAST](https://github.com/beast-dev/beast-mcmc) software, modified with the Hamiltonian Bouncy Particle Sampler of Chin et al. 
