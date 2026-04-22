@@ -8875,7 +8875,7 @@
 
     </operators>
     <!-- Define MCMC                                                             -->
-    <mcmc id="mcmc" chainLength="2500000" autoOptimize="false" adaptation="false"
+    <mcmc id="mcmc" chainLength="5000000" autoOptimize="false" adaptation="false"
           operatorAnalysis="28traits_byBeauti.ops">
         <joint id="joint">
             <prior id="prior">
@@ -8903,7 +8903,7 @@
             </column>
         </log>
         <!--write log to file                                                       -->
-        <log id="fileLog1" logEvery="10" fileName="corr_24t_BPS.log">
+        <log id="fileLog1" logEvery="500" fileName="corr_24t_BPS.log">
             <joint idref="joint"/>
             <prior idref="prior"/>
             <likelihood idref="likelihood"/>
