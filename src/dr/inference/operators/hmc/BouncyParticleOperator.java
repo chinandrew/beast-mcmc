@@ -104,6 +104,8 @@ public class BouncyParticleOperator extends AbstractParticleOperator implements 
             recordOneMoreEvent();
         }
         storeVelocity(velocity);
+        // System.out.println(this.numEvents);
+
         return 0.0;
     }
 
