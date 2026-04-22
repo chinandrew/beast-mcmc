@@ -106,6 +106,8 @@ public class NoUTurnOperator extends SimpleMCMCOperator implements GibbsOperator
                 trajectoryTree.flagContinue = false;
             }
         }
+        // System.out.println("height " + height);
+        // System.out.println("step size is " + stepSizeInformation.getStepSize());
         if (adaptiveStepsize && getCount() > adaptiveDelay) {
             stepSizeInformation.update(m, trajectoryTree.cumAcceptProb, trajectoryTree.numAcceptProbStates);
             if (printStepsize) System.err.println("step size is " + stepSizeInformation.getStepSize());
